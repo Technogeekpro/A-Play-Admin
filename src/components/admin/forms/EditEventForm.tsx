@@ -103,7 +103,10 @@ export function EditEventForm({ event, onClose, onSuccess }: EditEventFormProps)
       // First, update the event
       const { data: updatedEvent, error: eventError } = await supabase
         .from("events")
-        .update(eventData)
+        .update({
+          ...eventData,
+          club_id: eventData.club_id || null
+        })
         .eq("id", event.id)
         .select()
         .single();
@@ -177,7 +180,7 @@ export function EditEventForm({ event, onClose, onSuccess }: EditEventFormProps)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.club_id || !formData.start_date) {
+    if (!formData.title || !formData.start_date || !formData.description || !formData.location) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -255,10 +258,10 @@ export function EditEventForm({ event, onClose, onSuccess }: EditEventFormProps)
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="club">Club *</Label>
+                <Label htmlFor="club">Club</Label>
                 <Select value={formData.club_id} onValueChange={(value) => handleInputChange("club_id", value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a club" />
+                    <SelectValue placeholder="Select a club (Optional)" />
                   </SelectTrigger>
                   <SelectContent>
                     {clubs?.map((club) => (
@@ -272,18 +275,19 @@ export function EditEventForm({ event, onClose, onSuccess }: EditEventFormProps)
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Description *</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => handleInputChange("description", e.target.value)}
                 placeholder="Enter event description"
                 rows={3}
+                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
+              <Label htmlFor="location">Location *</Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -292,6 +296,7 @@ export function EditEventForm({ event, onClose, onSuccess }: EditEventFormProps)
                   onChange={(e) => handleInputChange("location", e.target.value)}
                   placeholder="Enter event location"
                   className="pl-10"
+                  required
                 />
               </div>
             </div>
