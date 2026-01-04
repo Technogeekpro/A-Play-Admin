@@ -7,8 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -38,17 +36,6 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { 
   CreditCard, 
   Search, 
@@ -70,11 +57,12 @@ import {
   Package,
   Zap,
   Award,
-  Trash2,
   Save
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { CreateSubscriptionPlanForm } from "@/components/admin/forms/CreateSubscriptionPlanForm";
+import { EditSubscriptionPlanForm } from "@/components/admin/forms/EditSubscriptionPlanForm";
 
 export function SubscriptionsView() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -83,67 +71,56 @@ export function SubscriptionsView() {
   const [pageSize, setPageSize] = useState(10);
   const [activeTab, setActiveTab] = useState("overview");
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
-  const [newPlan, setNewPlan] = useState({
-    name: "",
-    description: "",
-    duration_days: 30,
-    price: "",
-    currency: "GHS",
-    features: [
-      { key: "ad_free", value: true, type: "boolean" as const },
-      { key: "vip_support", value: true, type: "boolean" as const },
-      { key: "max_bookings", value: 10, type: "number" as const },
-      { key: "exclusive_events", value: true, type: "boolean" as const },
-      { key: "priority_booking", value: true, type: "boolean" as const }
-    ] as Array<{ key: string; value: string | number | boolean; type: "text" | "number" | "boolean" }>,
-    is_active: true
+  const [editingPlan, setEditingPlan] = useState<any | null>(null);
+  const [isEditSubscriptionOpen, setIsEditSubscriptionOpen] = useState(false);
+  const [editingSubscription, setEditingSubscription] = useState<any | null>(null);
+  const [editSubscriptionForm, setEditSubscriptionForm] = useState({
+    status: "active",
+    planId: "none",
+    planType: "monthly",
   });
   const queryClient = useQueryClient();
 
-  // Mutation for creating a new subscription plan
-  const createPlanMutation = useMutation({
-    mutationFn: async (planData: typeof newPlan) => {
-      const featuresObject = planData.features.reduce((acc, feature) => {
-        acc[feature.key] = feature.value;
-        return acc;
-      }, {} as Record<string, any>);
+  const updateUserSubscriptionMutation = useMutation({
+    mutationFn: async (updates: {
+      id: string;
+      status: string;
+      plan_id: string | null;
+      plan_type: string | null;
+      subscription_type: string;
+      amount?: number;
+    }) => {
+      const { id, ...data } = updates;
+      const { error } = await supabase.from("user_subscriptions").update(data).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-subscriptions"] });
+      setIsEditSubscriptionOpen(false);
+      setEditingSubscription(null);
+      toast.success("Subscription updated successfully");
+    },
+    onError: (error) => {
+      console.error("Error updating subscription:", error);
+      toast.error("Failed to update subscription");
+    },
+  });
 
+  const updatePlanStatusMutation = useMutation({
+    mutationFn: async (payload: { id: string; is_active: boolean }) => {
       const { error } = await supabase
         .from("subscription_plans")
-        .insert({
-          name: planData.name,
-          description: planData.description,
-          duration_days: planData.duration_days,
-          price: parseFloat(planData.price),
-          currency: planData.currency,
-          features: featuresObject,
-          is_active: planData.is_active
-        });
+        .update({ is_active: payload.is_active })
+        .eq("id", payload.id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscription-plans"] });
-      setIsCreatePlanOpen(false);
-      setNewPlan({
-        name: "",
-        description: "",
-        duration_days: 30,
-        price: "",
-        currency: "GHS",
-        features: [
-          { key: "ad_free", value: true, type: "boolean" as const },
-          { key: "vip_support", value: true, type: "boolean" as const },
-          { key: "max_bookings", value: 10, type: "number" as const },
-          { key: "exclusive_events", value: true, type: "boolean" as const },
-          { key: "priority_booking", value: true, type: "boolean" as const }
-        ],
-        is_active: true
-      });
-      toast.success("Subscription plan created successfully");
+      toast.success("Plan status updated successfully");
     },
     onError: (error) => {
-      console.error("Error creating plan:", error);
-      toast.error("Failed to create subscription plan");
+      console.error("Error updating plan status:", error);
+      toast.error("Failed to update plan status");
     },
   });
 
@@ -306,42 +283,49 @@ export function SubscriptionsView() {
       .slice(0, 2);
   };
 
-  const addFeature = () => {
-    setNewPlan(prev => ({
-      ...prev,
-      features: [...prev.features, { key: "", value: "", type: "text" as const }]
-    }));
+  const openEditSubscription = (subscription: any) => {
+    setEditingSubscription(subscription);
+    setEditSubscriptionForm({
+      status: subscription.status || "active",
+      planId: subscription.plan_id || "none",
+      planType: subscription.plan_type || "monthly",
+    });
+    setIsEditSubscriptionOpen(true);
   };
 
-  const removeFeature = (index: number) => {
-    setNewPlan(prev => ({
-      ...prev,
-      features: prev.features.filter((_, i) => i !== index)
-    }));
-  };
+  const handleUpdateSubscription = () => {
+    if (!editingSubscription) return;
 
-  const updateFeature = (index: number, field: "key" | "value" | "type", value: any) => {
-    setNewPlan(prev => ({
-      ...prev,
-      features: prev.features.map((feature, i) => 
-        i === index ? { ...feature, [field]: value } : feature
-      )
-    }));
-  };
+    const selectedPlan =
+      editSubscriptionForm.planId !== "none"
+        ? plans.find((p: any) => p.id === editSubscriptionForm.planId)
+        : null;
 
-  const handleCreatePlan = () => {
-    if (!newPlan.name || !newPlan.description || !newPlan.price) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-    createPlanMutation.mutate(newPlan);
+    const monthlyPriceCandidate =
+      selectedPlan?.price_monthly ?? selectedPlan?.price ?? selectedPlan?.priceMonthly;
+    const yearlyPriceCandidate =
+      selectedPlan?.price_yearly ?? selectedPlan?.price_yearly ?? selectedPlan?.priceYearly;
+
+    const computedAmount =
+      editSubscriptionForm.planType === "yearly"
+        ? Number(yearlyPriceCandidate ?? monthlyPriceCandidate ?? editingSubscription.amount ?? 0)
+        : Number(monthlyPriceCandidate ?? editingSubscription.amount ?? 0);
+
+    updateUserSubscriptionMutation.mutate({
+      id: editingSubscription.id,
+      status: editSubscriptionForm.status,
+      plan_id: editSubscriptionForm.planId === "none" ? null : editSubscriptionForm.planId,
+      plan_type: editSubscriptionForm.planType,
+      subscription_type: selectedPlan?.name ?? editingSubscription.subscription_type,
+      amount: Number.isFinite(computedAmount) ? computedAmount : editingSubscription.amount,
+    });
   };
 
   const getRevenueByMonth = () => {
     if (!payments.length) return [];
     
     const monthlyRevenue = payments.reduce((acc, payment) => {
-      if (payment.payment_status === 'success') {
+      if (payment.status === "success") {
         const month = format(new Date(payment.payment_date), 'MMM yyyy');
         acc[month] = (acc[month] || 0) + parseFloat(String(payment.amount || '0'));
       }
@@ -506,9 +490,9 @@ export function SubscriptionsView() {
                     <div key={plan.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div>
                         <div className="font-medium">{plan.name}</div>
-                        <div className="text-sm text-muted-foreground">{plan.duration_days} days</div>
+                        <div className="text-sm text-muted-foreground">Tier {plan.tier_level ?? "-"}</div>
                       </div>
-                      <div className="text-lg font-bold text-primary">₵{parseFloat(plan.price).toFixed(2)}</div>
+                      <div className="text-lg font-bold text-primary">₵{parseFloat(String(plan.price_monthly ?? 0)).toFixed(2)}</div>
                     </div>
                   ))}
                   {plans.filter(plan => plan.is_active).length === 0 && (
@@ -530,14 +514,14 @@ export function SubscriptionsView() {
                   {payments.slice(0, 5).map((payment) => (
                     <div key={payment.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div>
-                                                 <div className="font-medium">₵{parseFloat(String(payment.amount)).toFixed(2)}</div>
+                        <div className="font-medium">₵{parseFloat(String(payment.amount)).toFixed(2)}</div>
                         <div className="text-sm text-muted-foreground">{format(new Date(payment.payment_date), "MMM dd, yyyy")}</div>
                       </div>
-                      <Badge className={payment.payment_status === 'success' 
+                      <Badge className={payment.status === "success" 
                         ? 'bg-green-500/10 text-green-600 border-green-500/20' 
                         : 'bg-red-500/10 text-red-600 border-red-500/20'
                       }>
-                        {payment.payment_status}
+                        {payment.status}
                       </Badge>
                     </div>
                   ))}
@@ -712,6 +696,14 @@ export function SubscriptionsView() {
                             </div>
                           </DialogContent>
                         </Dialog>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1"
+                          onClick={() => openEditSubscription(subscription)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -719,6 +711,114 @@ export function SubscriptionsView() {
               </TableBody>
             </Table>
           </Card>
+
+          <Dialog
+            open={isEditSubscriptionOpen}
+            onOpenChange={(open) => {
+              setIsEditSubscriptionOpen(open);
+              if (!open) setEditingSubscription(null);
+            }}
+          >
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Edit User Subscription</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Customer</p>
+                    <p className="font-medium">
+                      {editingSubscription?.profiles?.full_name || "Anonymous"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Current Plan</p>
+                    <p className="font-medium">{editingSubscription?.subscription_type || "-"}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select
+                      value={editSubscriptionForm.status}
+                      onValueChange={(value) =>
+                        setEditSubscriptionForm((prev) => ({ ...prev, status: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="expired">Expired</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Billing</Label>
+                    <Select
+                      value={editSubscriptionForm.planType}
+                      onValueChange={(value) =>
+                        setEditSubscriptionForm((prev) => ({ ...prev, planType: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Plan</Label>
+                  <Select
+                    value={editSubscriptionForm.planId}
+                    onValueChange={(value) =>
+                      setEditSubscriptionForm((prev) => ({ ...prev, planId: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select plan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Unassigned</SelectItem>
+                      {plans.map((plan: any) => (
+                        <SelectItem key={plan.id} value={plan.id}>
+                          {plan.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditSubscriptionOpen(false);
+                    setEditingSubscription(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUpdateSubscription}
+                  disabled={updateUserSubscriptionMutation.isPending || !editingSubscription}
+                  className="gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  {updateUserSubscriptionMutation.isPending ? "Saving..." : "Save"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Pagination */}
           <div className="flex items-center justify-between">
@@ -786,187 +886,10 @@ export function SubscriptionsView() {
               <h3 className="text-lg font-semibold">Subscription Plans</h3>
               <p className="text-muted-foreground">Manage available subscription plans and pricing</p>
             </div>
-            <Dialog open={isCreatePlanOpen} onOpenChange={setIsCreatePlanOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add New Plan
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create New Subscription Plan</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-6">
-                  {/* Basic Plan Information */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="plan-name">Plan Name *</Label>
-                      <Input
-                        id="plan-name"
-                        value={newPlan.name}
-                        onChange={(e) => setNewPlan(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="e.g., Premium Monthly"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="plan-duration">Duration (Days) *</Label>
-                      <Input
-                        id="plan-duration"
-                        type="number"
-                        value={newPlan.duration_days}
-                        onChange={(e) => setNewPlan(prev => ({ ...prev, duration_days: parseInt(e.target.value) || 30 }))}
-                        placeholder="30"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="plan-description">Description *</Label>
-                    <Textarea
-                      id="plan-description"
-                      value={newPlan.description}
-                      onChange={(e) => setNewPlan(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Describe the benefits and features of this plan..."
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="plan-price">Price *</Label>
-                      <Input
-                        id="plan-price"
-                        type="number"
-                        step="0.01"
-                        value={newPlan.price}
-                        onChange={(e) => setNewPlan(prev => ({ ...prev, price: e.target.value }))}
-                        placeholder="49.99"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="plan-currency">Currency</Label>
-                      <Select value={newPlan.currency} onValueChange={(value) => setNewPlan(prev => ({ ...prev, currency: value }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="GHS">GHS (Ghanaian Cedi)</SelectItem>
-                          <SelectItem value="USD">USD (US Dollar)</SelectItem>
-                          <SelectItem value="EUR">EUR (Euro)</SelectItem>
-                          <SelectItem value="GBP">GBP (British Pound)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Plan Features */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-base font-semibold">Plan Features</Label>
-                      <Button type="button" variant="outline" size="sm" onClick={addFeature} className="gap-1">
-                        <Plus className="h-3 w-3" />
-                        Add Feature
-                      </Button>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {newPlan.features.map((feature, index) => (
-                        <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
-                          <div className="flex-1">
-                            <Input
-                              placeholder="Feature name (e.g., ad_free)"
-                              value={feature.key}
-                              onChange={(e) => updateFeature(index, "key", e.target.value)}
-                            />
-                          </div>
-                          <div className="w-32">
-                            <Select value={feature.type} onValueChange={(value) => {
-                              updateFeature(index, "type", value);
-                              // Reset value when type changes
-                              if (value === "boolean") updateFeature(index, "value", true);
-                              else if (value === "number") updateFeature(index, "value", 0);
-                              else updateFeature(index, "value", "");
-                            }}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="boolean">Boolean</SelectItem>
-                                <SelectItem value="number">Number</SelectItem>
-                                <SelectItem value="text">Text</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="w-32">
-                            {feature.type === "boolean" ? (
-                              <div className="flex items-center space-x-2">
-                                <Switch
-                                  checked={feature.value as boolean}
-                                  onCheckedChange={(checked) => updateFeature(index, "value", checked)}
-                                />
-                                <span className="text-sm">{feature.value ? "Yes" : "No"}</span>
-                              </div>
-                            ) : feature.type === "number" ? (
-                              <Input
-                                type="number"
-                                value={feature.value as number}
-                                onChange={(e) => updateFeature(index, "value", parseInt(e.target.value) || 0)}
-                                placeholder="0"
-                              />
-                            ) : (
-                              <Input
-                                value={feature.value as string}
-                                onChange={(e) => updateFeature(index, "value", e.target.value)}
-                                placeholder="Value"
-                              />
-                            )}
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeFeature(index)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Plan Status */}
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={newPlan.is_active}
-                      onCheckedChange={(checked) => setNewPlan(prev => ({ ...prev, is_active: checked }))}
-                    />
-                    <Label>Make this plan active immediately</Label>
-                  </div>
-                </div>
-                
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsCreatePlanOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleCreatePlan} 
-                    disabled={createPlanMutation.isPending}
-                    className="gap-2"
-                  >
-                    {createPlanMutation.isPending ? (
-                      <>Creating...</>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4" />
-                        Create Plan
-                      </>
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button className="gap-2" onClick={() => setIsCreatePlanOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Add New Plan
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -984,9 +907,9 @@ export function SubscriptionsView() {
                       </Badge>
                     )}
                   </div>
-                  <div className="text-3xl font-bold text-primary">
-                    ₵{parseFloat(plan.price).toFixed(2)}
-                    <span className="text-sm font-normal text-muted-foreground">/{plan.duration_days} days</span>
+                  <div className="text-3xl font-bold text-primary">₵{parseFloat(String(plan.price_monthly ?? 0)).toFixed(2)}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Monthly{plan.price_yearly != null ? ` • ₵${parseFloat(String(plan.price_yearly)).toFixed(2)} yearly` : ""}
                   </div>
                   <p className="text-muted-foreground">{plan.description}</p>
                 </CardHeader>
@@ -1011,7 +934,12 @@ export function SubscriptionsView() {
                     )}
                   </div>
                   <div className="flex gap-2 mt-6">
-                    <Button variant="outline" size="sm" className="flex-1 gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-1"
+                      onClick={() => setEditingPlan(plan)}
+                    >
                       <Edit className="h-3 w-3" />
                       Edit
                     </Button>
@@ -1019,6 +947,10 @@ export function SubscriptionsView() {
                       variant={plan.is_active ? "destructive" : "default"}
                       size="sm" 
                       className="flex-1"
+                      onClick={() =>
+                        updatePlanStatusMutation.mutate({ id: plan.id, is_active: !plan.is_active })
+                      }
+                      disabled={updatePlanStatusMutation.isPending}
                     >
                       {plan.is_active ? "Deactivate" : "Activate"}
                     </Button>
@@ -1027,6 +959,20 @@ export function SubscriptionsView() {
               </Card>
             ))}
           </div>
+
+          {isCreatePlanOpen && (
+            <CreateSubscriptionPlanForm
+              onClose={() => setIsCreatePlanOpen(false)}
+              onSuccess={() => setIsCreatePlanOpen(false)}
+            />
+          )}
+          {editingPlan && (
+            <EditSubscriptionPlanForm
+              plan={editingPlan}
+              onClose={() => setEditingPlan(null)}
+              onSuccess={() => setEditingPlan(null)}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
