@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Shield, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ProtectedRouteProps {
@@ -12,7 +12,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [hasAccess, setHasAccess] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,14 +31,15 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           .eq("id", session.user.id)
           .single();
 
-        if (error || profile?.role !== "admin") {
-          setIsAdmin(false);
-        } else {
-          setIsAdmin(true);
+        if (error) {
+          setHasAccess(false);
+          return;
         }
+
+        setHasAccess(profile?.role === "admin");
       } catch (error) {
         console.error("Auth check failed:", error);
-        setIsAdmin(false);
+        setHasAccess(false);
       } finally {
         setIsLoading(false);
       }
@@ -76,7 +77,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!isAdmin) {
+  if (!hasAccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl">
@@ -86,7 +87,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
             <p className="text-gray-600 mb-6">
-              You don't have administrator privileges to access this area.
+              You don't have the required privileges to access this area.
             </p>
             <div className="space-y-3">
               <Button onClick={handleSignOut} variant="outline" className="w-full">

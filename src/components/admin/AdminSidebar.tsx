@@ -1,4 +1,6 @@
 import {
+  Beer,
+  Gamepad2,
   LayoutDashboard,
   Calendar,
   Building2,
@@ -14,6 +16,7 @@ import {
   Crown,
   Sparkles,
   Mic,
+  Waves,
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,75 +34,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useEffect, useMemo, useState } from "react";
 
 interface AdminSidebarProps {
   activeView: string;
   setActiveView: (view: string) => void;
 }
 
-const menuItems = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    id: "events",
-    label: "Events",
-    icon: Calendar,
-  },
-  {
-    id: "clubs",
-    label: "Clubs",
-    icon: Building2,
-  },
-  {
-    id: "users",
-    label: "Users",
-    icon: Users,
-  },
-  {
-    id: "feeds",
-    label: "Social Feeds",
-    icon: MessageSquare,
-  },
-  {
-    id: "bookings",
-    label: "Bookings",
-    icon: CreditCard,
-  },
-  {
-    id: "points",
-    label: "Points System",
-    icon: Trophy,
-    disabled: true,
-    badge: "Soon",
-  },
-  {
-    id: "subscriptions",
-    label: "Subscriptions",
-    icon: Crown,
-    badge: "Pro",
-  },
-  {
-    id: "concierge",
-    label: "Concierge",
-    icon: Gift,
-  },
-  {
-    id: "podcast",
-    label: "Podcast",
-    icon: Mic,
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    icon: Settings,
-  },
-];
-
 export function AdminSidebar({ activeView, setActiveView }: AdminSidebarProps) {
   const navigate = useNavigate();
+  const [profile, setProfile] = useState<{ role: string | null; is_organizer: boolean | null } | null>(null);
 
   const handleSignOut = async () => {
     try {
@@ -110,6 +54,61 @@ export function AdminSidebar({ activeView, setActiveView }: AdminSidebarProps) {
       toast.error("Failed to sign out");
     }
   };
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("role, is_organizer")
+        .eq("id", session.user.id)
+        .single();
+
+      setProfile({
+        role: data?.role ?? null,
+        is_organizer: data?.is_organizer ?? null,
+      });
+    };
+
+    loadProfile();
+  }, []);
+
+  const isAdmin = profile?.role === "admin";
+  const isOrganizer = profile?.is_organizer === true;
+
+  const menuItems = useMemo(() => {
+    const baseItems = [
+      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { id: "events", label: "Events", icon: Calendar },
+      { id: "lounges", label: "Lounges", icon: Building2 },
+      { id: "pubs", label: "Pubs", icon: Beer },
+      { id: "arcades", label: "Arcade Centers", icon: Gamepad2 },
+      { id: "beaches", label: "Beaches", icon: Waves },
+      { id: "live-shows", label: "Live Shows", icon: Mic },
+    ];
+
+    if (isAdmin) {
+      return [
+        ...baseItems.slice(0, 2),
+        { id: "clubs", label: "Clubs", icon: Building2 },
+        ...baseItems.slice(2),
+        { id: "users", label: "Users", icon: Users },
+        { id: "feeds", label: "Social Feeds", icon: MessageSquare },
+        { id: "bookings", label: "Bookings", icon: CreditCard },
+        { id: "points", label: "Points System", icon: Trophy, disabled: true, badge: "Soon" },
+        { id: "subscriptions", label: "Subscriptions", icon: Crown, badge: "Pro" },
+        { id: "concierge", label: "Concierge", icon: Gift },
+        { id: "podcast", label: "Podcast", icon: Mic },
+        { id: "settings", label: "Settings", icon: Settings },
+      ];
+    }
+
+    if (isOrganizer) return baseItems;
+
+    return baseItems;
+  }, [isAdmin, isOrganizer]);
 
   return (
     <Sidebar className="border-r border-border/40 bg-gradient-to-b from-white via-gray-50/30 to-white dark:from-gray-950 dark:via-gray-900/30 dark:to-gray-950 shadow-lg">

@@ -10,6 +10,11 @@ import { SubscriptionsView } from "./views/SubscriptionsView";
 import { ConciergeView } from "./views/ConciergeView";
 import { PodcastView } from "./views/PodcastView";
 import { SettingsView } from "./views/SettingsView";
+import { LoungesView } from "./views/LoungesView";
+import { PubsView } from "./views/PubsView";
+import { ArcadeCentersView } from "./views/ArcadeCentersView";
+import { BeachesView } from "./views/BeachesView";
+import { LiveShowsView } from "./views/LiveShowsView";
 
 interface AdminContentProps {
   activeView: string;
@@ -22,6 +27,16 @@ export function AdminContent({ activeView }: AdminContentProps) {
         return <AdminDashboard />;
       case "events":
         return <EventsView />;
+      case "lounges":
+        return <LoungesView />;
+      case "pubs":
+        return <PubsView />;
+      case "arcades":
+        return <ArcadeCentersView />;
+      case "beaches":
+        return <BeachesView />;
+      case "live-shows":
+        return <LiveShowsView />;
       case "clubs":
         return <ClubsView />;
       case "users":

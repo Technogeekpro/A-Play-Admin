@@ -47,9 +47,12 @@ export function CreateArcadeCenterForm({ onClose, onSuccess }: CreateArcadeCente
 
   const createArcadeCenterMutation = useMutation({
     mutationFn: async (arcadeCenterData: typeof formData) => {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error("Not authenticated");
+
       const { data, error } = await supabase
         .from("arcade_centers")
-        .insert([arcadeCenterData])
+        .insert([{ ...arcadeCenterData, created_by: user.id }])
         .select()
         .single();
 

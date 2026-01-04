@@ -41,9 +41,12 @@ export function CreateLoungeForm({ onClose, onSuccess }: CreateLoungeFormProps) 
 
   const createLoungeMutation = useMutation({
     mutationFn: async (loungeData: typeof formData) => {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error("Not authenticated");
+
       const { data, error } = await supabase
         .from("lounges")
-        .insert([loungeData])
+        .insert([{ ...loungeData, created_by: user.id }])
         .select()
         .single();
 

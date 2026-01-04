@@ -49,9 +49,12 @@ export function CreateBeachForm({ onClose, onSuccess }: CreateBeachFormProps) {
 
   const createBeachMutation = useMutation({
     mutationFn: async (beachData: typeof formData) => {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error("Not authenticated");
+
       const { data, error } = await supabase
         .from("beaches")
-        .insert([beachData])
+        .insert([{ ...beachData, created_by: user.id }])
         .select()
         .single();
 

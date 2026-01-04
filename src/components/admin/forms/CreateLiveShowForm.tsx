@@ -46,9 +46,12 @@ export function CreateLiveShowForm({ onClose, onSuccess }: CreateLiveShowFormPro
 
   const createLiveShowMutation = useMutation({
     mutationFn: async (liveShowData: typeof formData) => {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error("Not authenticated");
+
       const { data, error } = await supabase
         .from("live_shows")
-        .insert([liveShowData])
+        .insert([{ ...liveShowData, created_by: user.id }])
         .select()
         .single();
 

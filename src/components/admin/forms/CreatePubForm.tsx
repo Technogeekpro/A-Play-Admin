@@ -46,9 +46,12 @@ export function CreatePubForm({ onClose, onSuccess }: CreatePubFormProps) {
 
   const createPubMutation = useMutation({
     mutationFn: async (pubData: typeof formData) => {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error("Not authenticated");
+
       const { data, error } = await supabase
         .from("pubs")
-        .insert([pubData])
+        .insert([{ ...pubData, created_by: user.id }])
         .select()
         .single();
 

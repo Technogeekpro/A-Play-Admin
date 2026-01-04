@@ -149,6 +149,22 @@ ALTER TABLE arcade_centers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE beaches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE live_shows ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow public read access to active lounges" ON lounges;
+DROP POLICY IF EXISTS "Allow admin full access to lounges" ON lounges;
+DROP POLICY IF EXISTS "Allow organizers manage own lounges" ON lounges;
+DROP POLICY IF EXISTS "Allow public read access to active pubs" ON pubs;
+DROP POLICY IF EXISTS "Allow admin full access to pubs" ON pubs;
+DROP POLICY IF EXISTS "Allow organizers manage own pubs" ON pubs;
+DROP POLICY IF EXISTS "Allow public read access to active arcade centers" ON arcade_centers;
+DROP POLICY IF EXISTS "Allow admin full access to arcade centers" ON arcade_centers;
+DROP POLICY IF EXISTS "Allow organizers manage own arcade centers" ON arcade_centers;
+DROP POLICY IF EXISTS "Allow public read access to active beaches" ON beaches;
+DROP POLICY IF EXISTS "Allow admin full access to beaches" ON beaches;
+DROP POLICY IF EXISTS "Allow organizers manage own beaches" ON beaches;
+DROP POLICY IF EXISTS "Allow public read access to active live shows" ON live_shows;
+DROP POLICY IF EXISTS "Allow admin full access to live shows" ON live_shows;
+DROP POLICY IF EXISTS "Allow organizers manage own live shows" ON live_shows;
+
 -- Create RLS Policies for lounges
 CREATE POLICY "Allow public read access to active lounges"
   ON lounges FOR SELECT
@@ -161,6 +177,25 @@ CREATE POLICY "Allow admin full access to lounges"
       SELECT 1 FROM profiles
       WHERE profiles.id = auth.uid()
       AND profiles.role = 'admin'
+    )
+  );
+
+CREATE POLICY "Allow organizers manage own lounges"
+  ON lounges FOR ALL
+  USING (
+    created_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_organizer = true
+    )
+  )
+  WITH CHECK (
+    created_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_organizer = true
     )
   );
 
@@ -179,6 +214,25 @@ CREATE POLICY "Allow admin full access to pubs"
     )
   );
 
+CREATE POLICY "Allow organizers manage own pubs"
+  ON pubs FOR ALL
+  USING (
+    created_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_organizer = true
+    )
+  )
+  WITH CHECK (
+    created_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_organizer = true
+    )
+  );
+
 -- Create RLS Policies for arcade_centers
 CREATE POLICY "Allow public read access to active arcade centers"
   ON arcade_centers FOR SELECT
@@ -191,6 +245,25 @@ CREATE POLICY "Allow admin full access to arcade centers"
       SELECT 1 FROM profiles
       WHERE profiles.id = auth.uid()
       AND profiles.role = 'admin'
+    )
+  );
+
+CREATE POLICY "Allow organizers manage own arcade centers"
+  ON arcade_centers FOR ALL
+  USING (
+    created_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_organizer = true
+    )
+  )
+  WITH CHECK (
+    created_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_organizer = true
     )
   );
 
@@ -209,6 +282,25 @@ CREATE POLICY "Allow admin full access to beaches"
     )
   );
 
+CREATE POLICY "Allow organizers manage own beaches"
+  ON beaches FOR ALL
+  USING (
+    created_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_organizer = true
+    )
+  )
+  WITH CHECK (
+    created_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_organizer = true
+    )
+  );
+
 -- Create RLS Policies for live_shows
 CREATE POLICY "Allow public read access to active live shows"
   ON live_shows FOR SELECT
@@ -221,6 +313,25 @@ CREATE POLICY "Allow admin full access to live shows"
       SELECT 1 FROM profiles
       WHERE profiles.id = auth.uid()
       AND profiles.role = 'admin'
+    )
+  );
+
+CREATE POLICY "Allow organizers manage own live shows"
+  ON live_shows FOR ALL
+  USING (
+    created_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_organizer = true
+    )
+  )
+  WITH CHECK (
+    created_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_organizer = true
     )
   );
 
