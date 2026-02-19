@@ -692,6 +692,10 @@ export function EventsView() {
                                       <p className="font-medium">{event.clubs?.name || "No club"}</p>
                                     </div>
                                     <div>
+                                      <p className="text-sm text-muted-foreground">Category</p>
+                                      <p className="font-medium">{event.category || "—"}</p>
+                                    </div>
+                                    <div>
                                       <p className="text-sm text-muted-foreground">Start Date</p>
                                       <p className="font-medium">{formatDate(event.start_date)}</p>
                                     </div>

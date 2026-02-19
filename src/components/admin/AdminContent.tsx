@@ -15,6 +15,7 @@ import { PubsView } from "./views/PubsView";
 import { ArcadeCentersView } from "./views/ArcadeCentersView";
 import { BeachesView } from "./views/BeachesView";
 import { LiveShowsView } from "./views/LiveShowsView";
+import { CategoriesView } from "./views/CategoriesView";
 
 interface AdminContentProps {
   activeView: string;
@@ -45,6 +46,8 @@ export function AdminContent({ activeView }: AdminContentProps) {
         return <FeedsView />;
       case "bookings":
         return <BookingsView />;
+      case "categories":
+        return <CategoriesView />;
       case "points":
         return <PointsView />;
       case "subscriptions":

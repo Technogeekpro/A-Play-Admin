@@ -19,6 +19,10 @@ CREATE TABLE IF NOT EXISTS lounges (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Ensure created_by column exists on lounges for existing databases
+ALTER TABLE lounges
+  ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES profiles(id);
+
 -- Create pubs table
 CREATE TABLE IF NOT EXISTS pubs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -42,6 +46,10 @@ CREATE TABLE IF NOT EXISTS pubs (
   created_by UUID REFERENCES profiles(id),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Ensure created_by column exists on pubs for existing databases
+ALTER TABLE pubs
+  ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES profiles(id);
 
 -- Create arcade_centers table
 CREATE TABLE IF NOT EXISTS arcade_centers (
@@ -67,6 +75,10 @@ CREATE TABLE IF NOT EXISTS arcade_centers (
   created_by UUID REFERENCES profiles(id),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Ensure created_by column exists on arcade_centers for existing databases
+ALTER TABLE arcade_centers
+  ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES profiles(id);
 
 -- Create beaches table
 CREATE TABLE IF NOT EXISTS beaches (
@@ -94,6 +106,10 @@ CREATE TABLE IF NOT EXISTS beaches (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Ensure created_by column exists on beaches for existing databases
+ALTER TABLE beaches
+  ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES profiles(id);
+
 -- Create live_shows table
 CREATE TABLE IF NOT EXISTS live_shows (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -119,6 +135,10 @@ CREATE TABLE IF NOT EXISTS live_shows (
   created_by UUID REFERENCES profiles(id),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Ensure created_by column exists on live_shows for existing databases
+ALTER TABLE live_shows
+  ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES profiles(id);
 
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_lounges_is_featured ON lounges(is_featured) WHERE is_featured = true;

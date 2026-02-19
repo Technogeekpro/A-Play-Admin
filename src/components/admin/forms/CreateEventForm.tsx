@@ -34,6 +34,7 @@ export function CreateEventForm({ onClose, onSuccess }: CreateEventFormProps) {
     club_id: "",
     cover_image: ""
   });
+  const [categoryId, setCategoryId] = useState<string>("");
 
   const [zones, setZones] = useState<Zone[]>([
     { id: crypto.randomUUID(), name: "", price: "", capacity: "" }
@@ -51,19 +52,52 @@ export function CreateEventForm({ onClose, onSuccess }: CreateEventFormProps) {
     },
   });
 
+  const { data: categories } = useQuery({
+    queryKey: ["active-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name, display_name, sort_order, is_active")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true, nullsFirst: false })
+        .order("display_name", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const createEventMutation = useMutation({
     mutationFn: async (eventData: typeof formData) => {
+      let categoryDisplayName: string | null = null;
+      if (categoryId) {
+        const { data, error } = await supabase
+          .from("categories")
+          .select("display_name")
+          .eq("id", categoryId)
+          .single();
+        if (error) throw error;
+        categoryDisplayName = data?.display_name ?? null;
+      }
+
       // First, create the event
       const { data: event, error: eventError } = await supabase
         .from("events")
         .insert([{
           ...eventData,
-          club_id: eventData.club_id || null
+          club_id: eventData.club_id || null,
+          category: categoryDisplayName,
         }])
         .select()
         .single();
       
       if (eventError) throw eventError;
+
+      if (categoryId) {
+        const { error: categoryLinkError } = await supabase
+          .from("event_categories")
+          .insert([{ event_id: event.id, category_id: categoryId }]);
+        if (categoryLinkError) throw categoryLinkError;
+      }
 
       // Then create the zones for this event
       const validZones = zones.filter(zone => 
@@ -192,6 +226,26 @@ export function CreateEventForm({ onClose, onSuccess }: CreateEventFormProps) {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select
+                value={categoryId || "none"}
+                onValueChange={(value) => setCategoryId(value === "none" ? "" : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category (Optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {categories?.map((category: any) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

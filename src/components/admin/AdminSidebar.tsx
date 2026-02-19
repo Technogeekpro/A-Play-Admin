@@ -17,6 +17,7 @@ import {
   Sparkles,
   Mic,
   Waves,
+  Tags,
 } from "lucide-react";
 import {
   Sidebar,
@@ -97,6 +98,7 @@ export function AdminSidebar({ activeView, setActiveView }: AdminSidebarProps) {
         { id: "users", label: "Users", icon: Users },
         { id: "feeds", label: "Social Feeds", icon: MessageSquare },
         { id: "bookings", label: "Bookings", icon: CreditCard },
+        { id: "categories", label: "Categories", icon: Tags },
         { id: "points", label: "Points System", icon: Trophy, disabled: true, badge: "Soon" },
         { id: "subscriptions", label: "Subscriptions", icon: Crown, badge: "Pro" },
         { id: "concierge", label: "Concierge", icon: Gift },

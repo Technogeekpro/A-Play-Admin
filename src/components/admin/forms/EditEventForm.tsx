@@ -37,6 +37,7 @@ export function EditEventForm({ event, onClose, onSuccess }: EditEventFormProps)
     club_id: "",
     cover_image: ""
   });
+  const [categoryId, setCategoryId] = useState<string>("");
 
   const [zones, setZones] = useState<Zone[]>([]);
   const [originalZones, setOriginalZones] = useState<Zone[]>([]);
@@ -98,20 +99,78 @@ export function EditEventForm({ event, onClose, onSuccess }: EditEventFormProps)
     },
   });
 
+  const { data: categories } = useQuery({
+    queryKey: ["active-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name, display_name, sort_order, is_active")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true, nullsFirst: false })
+        .order("display_name", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: existingCategories } = useQuery({
+    queryKey: ["event-categories", event?.id],
+    queryFn: async () => {
+      if (!event?.id) return [];
+      const { data, error } = await supabase
+        .from("event_categories")
+        .select("category_id")
+        .eq("event_id", event.id);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!event?.id,
+  });
+
+  useEffect(() => {
+    const first = existingCategories?.[0]?.category_id;
+    setCategoryId(first ?? "");
+  }, [existingCategories]);
+
   const updateEventMutation = useMutation({
     mutationFn: async (eventData: typeof formData) => {
+      let categoryDisplayName: string | null = null;
+      if (categoryId) {
+        const { data, error } = await supabase
+          .from("categories")
+          .select("display_name")
+          .eq("id", categoryId)
+          .single();
+        if (error) throw error;
+        categoryDisplayName = data?.display_name ?? null;
+      }
+
       // First, update the event
       const { data: updatedEvent, error: eventError } = await supabase
         .from("events")
         .update({
           ...eventData,
-          club_id: eventData.club_id || null
+          club_id: eventData.club_id || null,
+          category: categoryDisplayName,
         })
         .eq("id", event.id)
         .select()
         .single();
       
       if (eventError) throw eventError;
+
+      const { error: deleteCategoryLinksError } = await supabase
+        .from("event_categories")
+        .delete()
+        .eq("event_id", event.id);
+      if (deleteCategoryLinksError) throw deleteCategoryLinksError;
+
+      if (categoryId) {
+        const { error: insertCategoryLinkError } = await supabase
+          .from("event_categories")
+          .insert([{ event_id: event.id, category_id: categoryId }]);
+        if (insertCategoryLinkError) throw insertCategoryLinkError;
+      }
 
       // Handle zones
       const validZones = zones.filter(zone => 
@@ -272,6 +331,23 @@ export function EditEventForm({ event, onClose, onSuccess }: EditEventFormProps)
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select value={categoryId || "none"} onValueChange={(value) => setCategoryId(value === "none" ? "" : value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category (Optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {categories?.map((category: any) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
