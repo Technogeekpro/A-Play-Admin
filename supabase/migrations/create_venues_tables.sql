@@ -23,6 +23,33 @@ CREATE TABLE IF NOT EXISTS lounges (
 ALTER TABLE lounges
   ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES profiles(id);
 
+CREATE TABLE IF NOT EXISTS restaurants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  location TEXT NOT NULL,
+  cover_image TEXT,
+  logo_url TEXT,
+  phone TEXT,
+  email TEXT,
+  website TEXT,
+  opening_hours JSONB,
+  amenities TEXT[],
+  cuisine_types TEXT[],
+  price_range TEXT,
+  has_delivery BOOLEAN DEFAULT false,
+  has_takeout BOOLEAN DEFAULT false,
+  has_reservations BOOLEAN DEFAULT false,
+  is_featured BOOLEAN DEFAULT false,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_by UUID REFERENCES profiles(id),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE restaurants
+  ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES profiles(id);
+
 -- Create pubs table
 CREATE TABLE IF NOT EXISTS pubs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -145,6 +172,10 @@ CREATE INDEX IF NOT EXISTS idx_lounges_is_featured ON lounges(is_featured) WHERE
 CREATE INDEX IF NOT EXISTS idx_lounges_is_active ON lounges(is_active) WHERE is_active = true;
 CREATE INDEX IF NOT EXISTS idx_lounges_created_at ON lounges(created_at DESC);
 
+CREATE INDEX IF NOT EXISTS idx_restaurants_is_featured ON restaurants(is_featured) WHERE is_featured = true;
+CREATE INDEX IF NOT EXISTS idx_restaurants_is_active ON restaurants(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_restaurants_created_at ON restaurants(created_at DESC);
+
 CREATE INDEX IF NOT EXISTS idx_pubs_is_featured ON pubs(is_featured) WHERE is_featured = true;
 CREATE INDEX IF NOT EXISTS idx_pubs_is_active ON pubs(is_active) WHERE is_active = true;
 CREATE INDEX IF NOT EXISTS idx_pubs_created_at ON pubs(created_at DESC);
@@ -164,6 +195,7 @@ CREATE INDEX IF NOT EXISTS idx_live_shows_created_at ON live_shows(created_at DE
 
 -- Enable Row Level Security
 ALTER TABLE lounges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pubs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE arcade_centers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE beaches ENABLE ROW LEVEL SECURITY;
@@ -172,6 +204,9 @@ ALTER TABLE live_shows ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read access to active lounges" ON lounges;
 DROP POLICY IF EXISTS "Allow admin full access to lounges" ON lounges;
 DROP POLICY IF EXISTS "Allow organizers manage own lounges" ON lounges;
+DROP POLICY IF EXISTS "Allow public read access to active restaurants" ON restaurants;
+DROP POLICY IF EXISTS "Allow admin full access to restaurants" ON restaurants;
+DROP POLICY IF EXISTS "Allow organizers manage own restaurants" ON restaurants;
 DROP POLICY IF EXISTS "Allow public read access to active pubs" ON pubs;
 DROP POLICY IF EXISTS "Allow admin full access to pubs" ON pubs;
 DROP POLICY IF EXISTS "Allow organizers manage own pubs" ON pubs;
@@ -202,6 +237,39 @@ CREATE POLICY "Allow admin full access to lounges"
 
 CREATE POLICY "Allow organizers manage own lounges"
   ON lounges FOR ALL
+  USING (
+    created_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_organizer = true
+    )
+  )
+  WITH CHECK (
+    created_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_organizer = true
+    )
+  );
+
+CREATE POLICY "Allow public read access to active restaurants"
+  ON restaurants FOR SELECT
+  USING (is_active = true);
+
+CREATE POLICY "Allow admin full access to restaurants"
+  ON restaurants FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'admin'
+    )
+  );
+
+CREATE POLICY "Allow organizers manage own restaurants"
+  ON restaurants FOR ALL
   USING (
     created_by = auth.uid()
     AND EXISTS (
@@ -357,6 +425,7 @@ CREATE POLICY "Allow organizers manage own live shows"
 
 -- Add comments for documentation
 COMMENT ON TABLE lounges IS 'Lounge venues with amenities and pricing information';
+COMMENT ON TABLE restaurants IS 'Restaurant venues with cuisine and service options';
 COMMENT ON TABLE pubs IS 'Pub venues with food, drinks, and entertainment options';
 COMMENT ON TABLE arcade_centers IS 'Arcade gaming centers with game types and facilities';
 COMMENT ON TABLE beaches IS 'Beach locations with activities and amenities';

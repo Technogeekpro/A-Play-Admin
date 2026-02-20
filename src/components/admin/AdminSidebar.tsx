@@ -18,6 +18,7 @@ import {
   Mic,
   Waves,
   Tags,
+  Utensils,
 } from "lucide-react";
 import {
   Sidebar,
@@ -83,6 +84,7 @@ export function AdminSidebar({ activeView, setActiveView }: AdminSidebarProps) {
     const baseItems = [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
       { id: "events", label: "Events", icon: Calendar },
+      { id: "restaurants", label: "Restaurants", icon: Utensils },
       { id: "lounges", label: "Lounges", icon: Building2 },
       { id: "pubs", label: "Pubs", icon: Beer },
       { id: "arcades", label: "Arcade Centers", icon: Gamepad2 },

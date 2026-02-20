@@ -16,6 +16,7 @@ import { ArcadeCentersView } from "./views/ArcadeCentersView";
 import { BeachesView } from "./views/BeachesView";
 import { LiveShowsView } from "./views/LiveShowsView";
 import { CategoriesView } from "./views/CategoriesView";
+import { RestaurantsView } from "./views/RestaurantsView";
 
 interface AdminContentProps {
   activeView: string;
@@ -28,6 +29,8 @@ export function AdminContent({ activeView }: AdminContentProps) {
         return <AdminDashboard />;
       case "events":
         return <EventsView />;
+      case "restaurants":
+        return <RestaurantsView />;
       case "lounges":
         return <LoungesView />;
       case "pubs":
