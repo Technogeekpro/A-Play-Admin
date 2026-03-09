@@ -64,9 +64,10 @@ export function CreateRestaurantForm({ onClose, onSuccess }: CreateRestaurantFor
       toast.success("Restaurant created successfully!");
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating restaurant:", error);
-      toast.error("Failed to create restaurant");
+      const message = error?.message || "Failed to create restaurant";
+      toast.error(message);
     },
   });
 
@@ -368,4 +369,3 @@ export function CreateRestaurantForm({ onClose, onSuccess }: CreateRestaurantFor
     </div>
   );
 }
-

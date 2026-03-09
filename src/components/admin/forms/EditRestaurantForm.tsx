@@ -84,9 +84,10 @@ export function EditRestaurantForm({ restaurant, onClose, onSuccess }: EditResta
       toast.success("Restaurant updated successfully!");
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error updating restaurant:", error);
-      toast.error("Failed to update restaurant");
+      const message = error?.message || "Failed to update restaurant";
+      toast.error(message);
     },
   });
 
@@ -388,4 +389,3 @@ export function EditRestaurantForm({ restaurant, onClose, onSuccess }: EditResta
     </div>
   );
 }
-
