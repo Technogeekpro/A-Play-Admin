@@ -66,9 +66,9 @@ export function CreateBeachForm({ onClose, onSuccess }: CreateBeachFormProps) {
       toast.success("Beach created successfully!");
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating beach:", error);
-      toast.error("Failed to create beach");
+      toast.error(error?.message || "Failed to create beach");
     },
   });
 

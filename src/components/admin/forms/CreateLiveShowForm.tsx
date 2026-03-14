@@ -63,9 +63,9 @@ export function CreateLiveShowForm({ onClose, onSuccess }: CreateLiveShowFormPro
       toast.success("Live Show created successfully!");
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating live show:", error);
-      toast.error("Failed to create live show");
+      toast.error(error?.message || "Failed to create live show");
     },
   });
 

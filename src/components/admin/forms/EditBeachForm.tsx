@@ -88,9 +88,9 @@ export function EditBeachForm({ beach, onClose, onSuccess }: EditBeachFormProps)
       toast.success("Beach updated successfully!");
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error updating beach:", error);
-      toast.error("Failed to update beach");
+      toast.error(error?.message || "Failed to update beach");
     },
   });
 

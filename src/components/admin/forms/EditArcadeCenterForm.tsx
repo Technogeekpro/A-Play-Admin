@@ -84,9 +84,9 @@ export function EditArcadeCenterForm({ arcadeCenter, onClose, onSuccess }: EditA
       toast.success("Arcade Center updated successfully!");
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error updating arcade center:", error);
-      toast.error("Failed to update arcade center");
+      toast.error(error?.message || "Failed to update arcade center");
     },
   });
 

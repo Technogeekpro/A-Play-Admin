@@ -74,9 +74,9 @@ export function EditLoungeForm({ lounge, onClose, onSuccess }: EditLoungeFormPro
       toast.success("Lounge updated successfully!");
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error updating lounge:", error);
-      toast.error("Failed to update lounge");
+      toast.error(error?.message || "Failed to update lounge");
     },
   });
 

@@ -84,9 +84,9 @@ export function EditLiveShowForm({ liveShow, onClose, onSuccess }: EditLiveShowF
       toast.success("Live Show updated successfully!");
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error updating live show:", error);
-      toast.error("Failed to update live show");
+      toast.error(error?.message || "Failed to update live show");
     },
   });
 

@@ -58,9 +58,9 @@ export function CreateLoungeForm({ onClose, onSuccess }: CreateLoungeFormProps) 
       toast.success("Lounge created successfully!");
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating lounge:", error);
-      toast.error("Failed to create lounge");
+      toast.error(error?.message || "Failed to create lounge");
     },
   });
 

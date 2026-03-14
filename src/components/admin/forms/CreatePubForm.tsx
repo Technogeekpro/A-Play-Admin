@@ -63,9 +63,9 @@ export function CreatePubForm({ onClose, onSuccess }: CreatePubFormProps) {
       toast.success("Pub created successfully!");
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating pub:", error);
-      toast.error("Failed to create pub");
+      toast.error(error?.message || "Failed to create pub");
     },
   });
 

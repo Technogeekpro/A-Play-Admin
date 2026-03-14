@@ -64,9 +64,9 @@ export function CreateArcadeCenterForm({ onClose, onSuccess }: CreateArcadeCente
       toast.success("Arcade Center created successfully!");
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating arcade center:", error);
-      toast.error("Failed to create arcade center");
+      toast.error(error?.message || "Failed to create arcade center");
     },
   });
 

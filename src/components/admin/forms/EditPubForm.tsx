@@ -82,9 +82,9 @@ export function EditPubForm({ pub, onClose, onSuccess }: EditPubFormProps) {
       toast.success("Pub updated successfully!");
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error updating pub:", error);
-      toast.error("Failed to update pub");
+      toast.error(error?.message || "Failed to update pub");
     },
   });
 
