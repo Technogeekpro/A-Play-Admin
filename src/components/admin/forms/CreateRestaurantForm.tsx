@@ -120,8 +120,9 @@ export function CreateRestaurantForm({ onClose, onSuccess }: CreateRestaurantFor
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
-      <Card className="w-full max-w-4xl my-8">
+    <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
+      <div className="flex min-h-full items-start justify-center p-4 sm:items-center">
+      <Card className="w-full max-w-4xl my-4">
         <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6">
           <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Utensils className="h-5 w-5" />
@@ -366,6 +367,7 @@ export function CreateRestaurantForm({ onClose, onSuccess }: CreateRestaurantFor
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
