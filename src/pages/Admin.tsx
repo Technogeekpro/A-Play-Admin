@@ -9,11 +9,11 @@ const Admin = () => {
   const [activeView, setActiveView] = useState("dashboard");
 
   return (
-    <div className="min-h-screen w-full bg-background">
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full">
+    <div className="h-screen overflow-hidden bg-background">
+      <SidebarProvider className="h-full">
+        <div className="flex h-full w-full">
           <AdminSidebar activeView={activeView} setActiveView={setActiveView} />
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-w-0 min-h-0">
             <MobileHeader />
             <AdminContent activeView={activeView} />
           </div>
